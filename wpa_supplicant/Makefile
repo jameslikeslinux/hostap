@@ -3,7 +3,8 @@ CC=gcc
 endif
 
 ifndef CFLAGS
-CFLAGS = -MMD -O2 -Wall -g
+#CFLAGS = -MMD -O2 -Wall -g
+CFLAGS = -features=extensions -g
 endif
 
 export LIBDIR ?= /usr/local/lib/
@@ -12,7 +13,7 @@ export BINDIR ?= /usr/local/sbin/
 CFLAGS += -I../src
 CFLAGS += -I../src/utils
 
-ALL=wpa_supplicant wpa_passphrase wpa_cli
+ALL=wpa_supplicant
 
 all: verify_config $(ALL) dynamic_eap_methods
 
@@ -235,6 +236,14 @@ endif
 
 ifeq ($(CONFIG_L2_PACKET), freebsd)
 LIBS += -lpcap
+endif
+
+ifeq ($(CONFIG_L2_PACKET), solaris)
+LIBS += -lsocket -ldlpi
+endif
+
+ifeq ($(CONFIG_L2_PACKET), none)
+LIBS += -lsocket
 endif
 
 ifdef CONFIG_EAP_TLS

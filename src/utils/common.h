@@ -194,6 +194,20 @@ static inline unsigned int wpa_swap_32(unsigned int v)
 #endif /* __CYGWIN__ || CONFIG_NATIVE_WINDOWS */
 
 
+#ifdef __sun
+static inline unsigned short bswap_16(unsigned short v)
+{
+	return ((v & 0xff) << 8) | (v >> 8);
+}
+
+static inline unsigned int bswap_32(unsigned int v)
+{
+	return ((v & 0xff) << 24) | ((v & 0xff00) << 8) |
+		((v & 0xff0000) >> 8) | (v >> 24);
+}
+#endif /* __sun */
+
+
 #ifndef WPA_BYTE_SWAP_DEFINED
 
 #ifndef __BYTE_ORDER
@@ -203,6 +217,8 @@ static inline unsigned int wpa_swap_32(unsigned int v)
 #define __BIG_ENDIAN 4321
 #if defined(sparc)
 #define __BYTE_ORDER __BIG_ENDIAN
+#elif defined(i386)
+#define __BYTE_ORDER __LITTLE_ENDIAN
 #endif
 #endif /* __BIG_ENDIAN */
 #endif /* __LITTLE_ENDIAN */

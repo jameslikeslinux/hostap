@@ -77,6 +77,12 @@ DRV_CFLAGS += -DCONFIG_DRIVER_NONE
 DRV_OBJS += ../src/drivers/driver_none.o
 endif
 
+ifdef CONFIG_DRIVER_SOLARIS
+DRV_CFLAGS += -DCONFIG_DRIVER_SOLARIS
+DRV_OBJS += ../src/drivers/driver_solaris.o
+DRV_LIBS += -ldlpi -ldladm
+endif
+
 ##### PURE AP DRIVERS
 
 ifdef CONFIG_DRIVER_ATHEROS
