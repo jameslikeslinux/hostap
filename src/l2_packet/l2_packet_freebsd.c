@@ -20,11 +20,11 @@
 #include <pcap.h>
 
 #include <sys/ioctl.h>
-#ifdef __sun
+#ifdef __sun__
 #include <libdlpi.h>
-#else /* __sun */
+#else /* __sun__ */
 #include <sys/sysctl.h>
-#endif /* __sun */
+#endif /* __sun__ */
 
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -143,7 +143,7 @@ static int l2_packet_init_libpcap(struct l2_packet_data *l2,
 	}
 
 	pcap_freecode(&pcap_fp);
-#ifndef __sun
+#ifndef __sun__
 	/*
 	 * When libpcap uses BPF we must enable "immediate mode" to
 	 * receive frames right away; otherwise the system may
@@ -158,7 +158,7 @@ static int l2_packet_init_libpcap(struct l2_packet_data *l2,
 			/* XXX should we fail? */
 		}
 	}
-#endif /* __sun */
+#endif /* __sun__ */
 
 	eloop_register_read_sock(pcap_get_selectable_fd(l2->pcap),
 				 l2_packet_receive, l2, l2->pcap);
@@ -169,7 +169,7 @@ static int l2_packet_init_libpcap(struct l2_packet_data *l2,
 
 static int eth_get(const char *device, u8 ea[ETH_ALEN])
 {
-#ifdef __sun
+#ifdef __sun__
 	dlpi_handle_t dh;
 	u32 physaddrlen = DLPI_PHYSADDR_MAX;
 	u8 physaddr[DLPI_PHYSADDR_MAX];
@@ -192,7 +192,7 @@ static int eth_get(const char *device, u8 ea[ETH_ALEN])
 	}
 	os_memcpy(ea, physaddr, ETH_ALEN);
 	dlpi_close(dh);
-#else /* __sun */
+#else /* __sun__ */
 	struct if_msghdr *ifm;
 	struct sockaddr_dl *sdl;
 	u_char *p, *buf;
@@ -225,7 +225,7 @@ static int eth_get(const char *device, u8 ea[ETH_ALEN])
 		errno = ESRCH;
 		return -1;
 	}
-#endif /* __sun */
+#endif /* __sun__ */
 	return 0;
 }
 
