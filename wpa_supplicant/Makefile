@@ -224,7 +224,7 @@ CFLAGS += -DCONFIG_WINPCAP
 LIBS += -lwpcap -lpacket
 LIBS_w += -lwpcap
 else
-LIBS += -ldnet -lpcap
+LIBS += -ldnet -lpcapn
 endif
 endif
 
@@ -234,7 +234,7 @@ LIBS_w += -lwpcap
 endif
 
 ifeq ($(CONFIG_L2_PACKET), freebsd)
-LIBS += -lpcap 
+LIBS += -lpcap
 endif
 
 ifeq ($(CONFIG_L2_PACKET), solaris)
