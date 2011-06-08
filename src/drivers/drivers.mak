@@ -66,6 +66,15 @@ CONFIG_L2_FREEBSD=y
 CONFIG_DNET_PCAP=y
 endif
 
+ifdef CONFIG_DRIVER_SOLARIS
+ifndef CONFIG_L2_PACKET
+CONFIG_L2_PACKET=solaris
+endif
+DRV_CFLAGS += -DCONFIG_DRIVER_SOLARIS
+DRV_OBJS += ../src/drivers/driver_solaris.o
+DRV_LIBS += -ldlpi -ldladm
+endif
+
 ifdef CONFIG_DRIVER_TEST
 DRV_CFLAGS += -DCONFIG_DRIVER_TEST
 DRV_OBJS += ../src/drivers/driver_test.o
@@ -75,12 +84,6 @@ endif
 ifdef CONFIG_DRIVER_NONE
 DRV_CFLAGS += -DCONFIG_DRIVER_NONE
 DRV_OBJS += ../src/drivers/driver_none.o
-endif
-
-ifdef CONFIG_DRIVER_SOLARIS
-DRV_CFLAGS += -DCONFIG_DRIVER_SOLARIS
-DRV_OBJS += ../src/drivers/driver_solaris.o
-DRV_LIBS += -ldlpi -ldladm
 endif
 
 ##### PURE AP DRIVERS
