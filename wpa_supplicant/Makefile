@@ -224,7 +224,7 @@ CFLAGS += -DCONFIG_WINPCAP
 LIBS += -lwpcap -lpacket
 LIBS_w += -lwpcap
 else
-LIBS += -ldnet -lpcapn
+LIBS += -ldnet -lpcap
 endif
 endif
 
