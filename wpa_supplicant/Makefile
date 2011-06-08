@@ -235,7 +235,7 @@ LIBS_w += -lwpcap
 endif
 
 ifeq ($(CONFIG_L2_PACKET), freebsd)
-LIBS += -lpcap
+LIBS += -lpcap -lsocket -lnsl
 endif
 
 ifeq ($(CONFIG_L2_PACKET), solaris)

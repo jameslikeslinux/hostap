@@ -35,6 +35,7 @@ struct l2_packet_data {
     void        (*rx_callback)(void *, const unsigned char *,
         const unsigned char *, size_t);
     void        *rx_callback_ctx;
+    int         l2_hdr;
 };
 
 static int
@@ -90,8 +91,24 @@ l2_packet_send(struct l2_packet_data *l2, const uint8_t *dst_addr,
     uint16_t proto, const uint8_t *buf, size_t buflen)
 {
 	int retval;
+    dlpi_sendinfo_t sendp;
 
-	retval = dlpi_send(l2->dh, NULL, 0, buf, buflen, NULL);
+    wpa_printf(MSG_DEBUG, "l2_packet_send: proto %d", proto);
+
+    if (l2->l2_hdr) {
+    	retval = dlpi_send(l2->dh, NULL, 0, buf, buflen, NULL);
+    } else {
+        struct l2_ethhdr *eth = os_malloc(sizeof(struct l2_ethhdr) + buflen);
+        if (eth == NULL)
+            return -1;
+        os_memcpy(eth->h_dest, dst_addr, ETH_ALEN);
+        os_memcpy(eth->h_source, l2->own_addr, ETH_ALEN);
+        eth->h_proto = htons(proto);
+        os_memcpy(eth + 1, buf, buflen);
+    	retval = dlpi_send(l2->dh, NULL, 0, eth, sizeof(struct l2_ethhdr) + buflen, NULL);
+        os_free(eth);
+    }
+
 	if (retval != DLPI_SUCCESS) {
 		wpa_printf(MSG_ERROR, "l2_packet_send: cannot send "
 		    "message on %s: %s", l2->ifname, dlpi_strerror(retval));
@@ -116,12 +133,14 @@ l2_packet_receive(int fd, void *eloop_ctx, void *sock_ctx)
 		    "message on %s: %s", l2->ifname, dlpi_strerror(retval));
 		return;
 	}
-
+/* XXX: Check l2_hdr? */
 	ethhdr = (struct l2_ethhdr *)buf;
 	if (buflen < sizeof (*ethhdr) ||
 	    (ntohs(ethhdr->h_proto) != ETHERTYPE_EAPOL &&
 	    ntohs(ethhdr->h_proto) != ETHERTYPE_RSN_PREAUTH))
 		return;
+
+    wpa_printf(MSG_DEBUG, "l2_packet_receive: proto %d", ntohs(ethhdr->h_proto));
 
 	l2->rx_callback(l2->rx_callback_ctx, ethhdr->h_source,
 	    (unsigned char *)(ethhdr + 1), buflen - sizeof (*ethhdr));
@@ -143,8 +162,9 @@ l2_packet_init(const char *ifname, const uint8_t *own_addr, unsigned short proto
 	(void) strlcpy(l2->ifname, ifname, sizeof (l2->ifname));
 	l2->rx_callback = rx_callback;
 	l2->rx_callback_ctx = rx_callback_ctx;
+    l2->l2_hdr = l2_hdr;
 
-	retval = dlpi_open(l2->ifname, &l2->dh, DLPI_RAW);
+   	retval = dlpi_open(l2->ifname, &l2->dh, DLPI_RAW);
 	if (retval != DLPI_SUCCESS) {
 		wpa_printf(MSG_ERROR, "unable to open DLPI link %s: %s",
 		    l2->ifname, dlpi_strerror(retval));

@@ -12,8 +12,9 @@
 #include <libdllink.h>
 #include "libdlwlan.h"
 
-#define     WPA_STATUS(status)      (status == DLADM_STATUS_OK? 0 : -1)
-#define     WPA_DOOR                "/var/run/wpa_door"
+#define WPA_STATUS(status)      (status == DLADM_STATUS_OK? 0 : -1)
+#define WPA_DOOR                "/var/run/wpa_door"
+#define MAX_SCANRESULTS         64
 
 typedef enum {
     SOLARIS_EVENT_ASSOC,
@@ -31,7 +32,6 @@ typedef struct {
     dlpi_handle_t dh;
     dladm_handle_t handle;
     datalink_id_t linkid;
-    struct wpa_scan_results results;
 } wpa_driver_solaris_data;
 
 static int
@@ -380,46 +380,6 @@ wpa_driver_solaris_disassociate(void *priv, const u8 *addr, int reason_code)
     return (WPA_STATUS(status));
 }
 
-static boolean_t
-wpa_driver_solaris_res_found(void *priv, dladm_wlan_attr_t *wlattr)
-{
-    size_t ssid_len;
-    struct wpa_scan_res *result;
-    u8 *pos;
-    wpa_driver_solaris_data *data = (wpa_driver_solaris_data*) priv;
-
-    wpa_printf(MSG_DEBUG, "%s", "wpa_driver_solaris_res_found");
-
-    data->results.num++;
-    data->results.res = (struct wpa_scan_res **) os_realloc(data->results.res, data->results.num * sizeof(struct wpa_scan_res *));
-
-    ssid_len = os_strlen(wlattr->wa_essid.we_bytes);
-    result = data->results.res[data->results.num - 1] = (struct wpa_scan_res *) os_zalloc(sizeof(struct wpa_scan_res) + ssid_len + 2);
-
-    os_memcpy(result->bssid, wlattr->wa_bssid.wb_bytes, ETH_ALEN);
-    result->freq = 2407 + wlattr->wa_channel * 5;
-
-    pos = (u8 *)(result + 1);
-    *pos++ = WLAN_EID_SSID;
-    *pos++ = ssid_len;
-    os_memcpy(pos, wlattr->wa_essid.we_bytes, ssid_len);
-    pos += ssid_len;
-
-    result->ie_len = pos - (u8 *)(result + 1);
-
-    if (wlattr->wa_bsstype == DLADM_WLAN_BSSTYPE_BSS)
-        result->caps |= IEEE80211_CAP_ESS;
-    else if (wlattr->wa_bsstype == DLADM_WLAN_BSSTYPE_IBSS)
-        result->caps |= IEEE80211_CAP_IBSS;
-
-    if (wlattr->wa_secmode != DLADM_WLAN_SECMODE_NONE)
-        result->caps |= IEEE80211_CAP_PRIVACY;
-
-    result->level = wlattr->wa_strength * 20;
-
-    return B_TRUE;
-}
-
 int
 wpa_driver_solaris_scan2(void *priv, struct wpa_driver_scan_params *params)
 {
@@ -428,19 +388,6 @@ wpa_driver_solaris_scan2(void *priv, struct wpa_driver_scan_params *params)
     wpa_driver_solaris_data *data = (wpa_driver_solaris_data*) priv;
 
     wpa_printf(MSG_DEBUG, "%s", "wpa_driver_solaris_scan2");
-
-    /*
-     * Free existing scan results
-     * XXX DOUBLE CHECK THIS
-     */
-    for (i = 0; i < data->results.num; i++) {
-        os_free(data->results.res[i]);
-        data->results.res[i] = NULL;
-    }
-    os_free(data->results.res);
-    data->results.res = NULL;
-    data->results.num = 0;
-
     /*
      * We force the state to INIT before calling ieee80211_new_state
      * to get ieee80211_begin_scan called.  We really want to scan w/o
@@ -449,7 +396,7 @@ wpa_driver_solaris_scan2(void *priv, struct wpa_driver_scan_params *params)
     (void) wpa_driver_solaris_disassociate(priv, NULL,
         DLADM_WLAN_REASON_DISASSOC_LEAVING);
 
-    status = dladm_wlan_scan(data->handle, data->linkid, priv, wpa_driver_solaris_res_found);
+    status = dladm_wlan_scan(data->handle, data->linkid, NULL, NULL);
 
     wpa_printf(MSG_DEBUG, "%s: return", "wpa_driver_solaris_scan");
     return (WPA_STATUS(status));
@@ -458,33 +405,41 @@ wpa_driver_solaris_scan2(void *priv, struct wpa_driver_scan_params *params)
 struct wpa_scan_results *
 wpa_driver_solaris_get_scan_results2(void *priv)
 {
-    size_t extra_len;
+    uint_t i, ret, extra_len;
     u8 *pos;
-    uint_t ret, i, j;
-    dladm_wlan_ess_t *ess;
+    dladm_wlan_ess_t ess[MAX_SCANRESULTS];
+    struct wpa_scan_results *results;
+    struct wpa_scan_res *res;
     wpa_driver_solaris_data *data = (wpa_driver_solaris_data*) priv;
 
     wpa_printf(MSG_DEBUG, "%s", "wpa_driver_solaris_get_scan_results2");
 
-    ess = (dladm_wlan_ess_t *) os_zalloc(data->results.num * sizeof(dladm_wlan_ess_t));
-    if (dladm_wlan_wpa_get_sr(data->handle, data->linkid, ess, data->results.num, &ret)
+    if (dladm_wlan_wpa_get_sr(data->handle, data->linkid, ess, MAX_SCANRESULTS, &ret)
         != DLADM_STATUS_OK) {
         return NULL;
     }
 
-    for (i = 0; i < data->results.num; i++)
-        for (j = 0; j < data->results.num; j++) {
-            if (os_memcmp(data->results.res[i]->bssid, ess[j].we_bssid.wb_bytes, DLADM_WLAN_BSSID_LEN) == 0) {
-                extra_len = data->results.res[i]->ie_len + ess[j].we_wpa_ie_len;
-                data->results.res[i] = (struct wpa_scan_res *) os_realloc(data->results.res[i], sizeof(struct wpa_scan_res) + extra_len);
-                pos = (u8 *) (data->results.res[i] + 1) + data->results.res[i]->ie_len;
+    results = (struct wpa_scan_results *) os_zalloc(sizeof(struct wpa_scan_results));
+    results->num = ret;
+    results->res = (struct wpa_scan_res **) os_zalloc(ret * sizeof(struct wpa_scan_res *));
 
-                os_memcpy(pos, ess[j].we_wpa_ie, ess[j].we_wpa_ie_len);
-                data->results.res[i]->ie_len = extra_len;
-            }
-        }
+    for (i = 0; i < ret; i++) {
+        extra_len = 2 + ess[i].we_ssid_len + ess[i].we_wpa_ie_len;
+        res = results->res[i] = (struct wpa_scan_res *) os_zalloc(sizeof(struct wpa_scan_res) + extra_len);
 
-    return &data->results;
+        os_memcpy(res->bssid, ess[i].we_bssid.wb_bytes, ETH_ALEN);
+        res->freq = ess[i].we_freq;
+        res->ie_len = extra_len;
+
+        pos = (u8 *) (res + 1);
+        *pos++ = WLAN_EID_SSID;
+        *pos++ = ess[i].we_ssid_len;
+        os_memcpy(pos, ess[i].we_ssid.we_bytes, ess[i].we_ssid_len);
+        pos += ess[i].we_ssid_len;
+        os_memcpy(pos, ess[i].we_wpa_ie, ess[i].we_wpa_ie_len);
+    }
+
+    return results;
 }
 
 int
