@@ -33,6 +33,9 @@ extern struct wpa_driver_ops wpa_driver_broadcom_ops; /* driver_broadcom.c */
 #ifdef CONFIG_DRIVER_BSD
 extern struct wpa_driver_ops wpa_driver_bsd_ops; /* driver_bsd.c */
 #endif /* CONFIG_DRIVER_BSD */
+#ifdef CONFIG_DRIVER_SOLARIS
+extern struct wpa_driver_ops wpa_driver_solaris_ops; /* driver_solaris.c */
+#endif /* CONFIG_DRIVER_SOLARIS */
 #ifdef CONFIG_DRIVER_NDIS
 extern struct wpa_driver_ops wpa_driver_ndis_ops; /* driver_ndis.c */
 #endif /* CONFIG_DRIVER_NDIS */
@@ -42,9 +45,6 @@ extern struct wpa_driver_ops wpa_driver_wired_ops; /* driver_wired.c */
 #ifdef CONFIG_DRIVER_TEST
 extern struct wpa_driver_ops wpa_driver_test_ops; /* driver_test.c */
 #endif /* CONFIG_DRIVER_TEST */
-#ifdef CONFIG_DRIVER_SOLARIS
-extern struct wpa_driver_ops wpa_driver_solaris_ops; /* driver_solaris.c */
-#endif
 #ifdef CONFIG_DRIVER_RALINK
 extern struct wpa_driver_ops wpa_driver_ralink_ops; /* driver_ralink.c */
 #endif /* CONFIG_DRIVER_RALINK */
@@ -86,6 +86,9 @@ struct wpa_driver_ops *wpa_drivers[] =
 #ifdef CONFIG_DRIVER_BSD
 	&wpa_driver_bsd_ops,
 #endif /* CONFIG_DRIVER_BSD */
+#ifdef CONFIG_DRIVER_SOLARIS
+	&wpa_driver_solaris_ops,
+#endif /* CONFIG_DRIVER_SOLARIS */
 #ifdef CONFIG_DRIVER_NDIS
 	&wpa_driver_ndis_ops,
 #endif /* CONFIG_DRIVER_NDIS */
@@ -95,9 +98,6 @@ struct wpa_driver_ops *wpa_drivers[] =
 #ifdef CONFIG_DRIVER_TEST
 	&wpa_driver_test_ops,
 #endif /* CONFIG_DRIVER_TEST */
-#ifdef CONFIG_DRIVER_SOLARIS
-    &wpa_driver_solaris_ops,
-#endif /* CONFIG_DRIVER_SOLARIS */
 #ifdef CONFIG_DRIVER_RALINK
 	&wpa_driver_ralink_ops,
 #endif /* CONFIG_DRIVER_RALINK */
