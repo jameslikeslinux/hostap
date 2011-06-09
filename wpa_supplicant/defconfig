@@ -95,6 +95,9 @@ CONFIG_DRIVER_NL80211=y
 #LIBS_p += -L/usr/local/lib
 #LIBS_c += -L/usr/local/lib
 
+# Driver interface for Solaris
+#CONFIG_DRIVER_SOLARIS=y
+
 # Driver interface for Windows NDIS
 #CONFIG_DRIVER_NDIS=y
 #CFLAGS += -I/usr/include/w32api/ddk
@@ -128,7 +131,9 @@ CONFIG_DRIVER_WIRED=y
 # Driver interface for no driver (e.g., WPS ER only)
 #CONFIG_DRIVER_NONE=y
 
-# Solaris libraries
+# Solaris configuration
+#CC=cc
+#CFLAGS=-features=extensions -g -I../src -I../src/utils
 #LIBS += -lsocket -ldlpi -lnsl
 #LIBS_c += -lsocket
 
@@ -304,6 +309,7 @@ CONFIG_BACKEND=file
 # linux = Linux packet socket (default)
 # pcap = libpcap/libdnet/WinPcap
 # freebsd = FreeBSD libpcap
+# solaris = Solaris DLPI
 # winpcap = WinPcap with receive thread
 # ndis = Windows NDISUIO (note: requires CONFIG_USE_NDISUIO=y)
 # none = Empty template
