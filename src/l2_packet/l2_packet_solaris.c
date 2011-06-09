@@ -118,28 +118,35 @@ int l2_packet_send(struct l2_packet_data *l2, const uint8_t *dst_addr,
 static void l2_packet_receive(int fd, void *eloop_ctx, void *sock_ctx)
 {
 	struct l2_packet_data *l2 = eloop_ctx;
-	uint64_t buf[IEEE80211_MTU_MAX / sizeof (uint64_t)];
-	size_t buflen = sizeof (buf);
+	uint64_t packet[IEEE80211_MTU_MAX / sizeof (uint64_t)];
+	unsigned char *buf;
+	size_t buflen = sizeof (packet);
 	struct l2_ethhdr *ethhdr;
 	int retval;
 
-	retval = dlpi_recv(l2->dh, NULL, NULL, buf, &buflen, 0, NULL);
+	retval = dlpi_recv(l2->dh, NULL, NULL, packet, &buflen, 0, NULL);
 	if (retval != DLPI_SUCCESS) {
 		wpa_printf(MSG_ERROR, "l2_packet_receive: cannot receive "
 			   "message on %s: %s",
 			   l2->ifname, dlpi_strerror(retval));
 		return;
 	}
-/* XXX: Check l2_hdr? */
-	ethhdr = (struct l2_ethhdr *)buf;
+
+	ethhdr = (struct l2_ethhdr *) packet;
+
 	if (buflen < sizeof (*ethhdr) ||
 	    (ntohs(ethhdr->h_proto) != ETHERTYPE_EAPOL &&
 	     ntohs(ethhdr->h_proto) != ETHERTYPE_RSN_PREAUTH))
-		return;
+		return;	
 
-	l2->rx_callback(l2->rx_callback_ctx, ethhdr->h_source,
-			(unsigned char *)(ethhdr + 1),
-			buflen - sizeof(*ethhdr));
+	if (l2->l2_hdr) {
+		buf = (unsigned char *) ethhdr;
+	} else {
+		buf = (unsigned char *) (ethhdr + 1);
+		buflen -= sizeof(*ethhdr);
+	}
+
+	l2->rx_callback(l2->rx_callback_ctx, ethhdr->h_source, buf, buflen);
 }
 
 struct l2_packet_data * l2_packet_init(const char *ifname,
