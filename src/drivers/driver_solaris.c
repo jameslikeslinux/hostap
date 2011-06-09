@@ -162,12 +162,12 @@ static void wpa_driver_solaris_door_destroy(wpa_driver_solaris_data *data)
 		return;
 
 	if (door_revoke(data->door_id) == -1) {
-		wpa_printf(MSG_ERROR, "failed to door_revoke(%d) %s, exiting.",
+		wpa_printf(MSG_ERROR, "failed to door_revoke(%d) %s.",
 			   data->door_id, strerror(errno));
 	}
 
 	if (fdetach(data->door_file) == -1) {
-		wpa_printf(MSG_ERROR, "failed to fdetach %s: %s, exiting.",
+		wpa_printf(MSG_ERROR, "failed to fdetach %s: %s.",
 			   data->door_file, strerror(errno));
 	}
 
