@@ -24,9 +24,9 @@
 #if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__FreeBSD_kernel__)
 #include <net/if_dl.h>
 #endif /* defined(__FreeBSD__) || defined(__DragonFly__) || defined(__FreeBSD_kernel__) */
-#ifdef __sun__
+#ifdef __sun
 #include <sys/sockio.h>
-#endif /* __sun__ */
+#endif /* __sun */
 
 #include "common.h"
 #include "eloop.h"
@@ -68,22 +68,22 @@ struct wpa_driver_wired_data {
  * based on ebtables, etc. */
 
 struct dhcp_message {
-	u_int8_t op;
-	u_int8_t htype;
-	u_int8_t hlen;
-	u_int8_t hops;
-	u_int32_t xid;
-	u_int16_t secs;
-	u_int16_t flags;
-	u_int32_t ciaddr;
-	u_int32_t yiaddr;
-	u_int32_t siaddr;
-	u_int32_t giaddr;
-	u_int8_t chaddr[16];
-	u_int8_t sname[64];
-	u_int8_t file[128];
-	u_int32_t cookie;
-	u_int8_t options[308]; /* 312 - cookie */
+	uint8_t op;
+	uint8_t htype;
+	uint8_t hlen;
+	uint8_t hops;
+	uint32_t xid;
+	uint16_t secs;
+	uint16_t flags;
+	uint32_t ciaddr;
+	uint32_t yiaddr;
+	uint32_t siaddr;
+	uint32_t giaddr;
+	uint8_t chaddr[16];
+	uint8_t sname[64];
+	uint8_t file[128];
+	uint32_t cookie;
+	uint8_t options[308]; /* 312 - cookie */
 };
 
 
@@ -465,9 +465,9 @@ static int wpa_driver_wired_multi(const char *ifname, const u8 *addr, int add)
 	struct ifreq ifr;
 	int s;
 
-#ifdef __sun__
+#ifdef __sun
 	return -1;
-#endif /* __sun__ */
+#endif /* __sun */
 
 	s = socket(PF_INET, SOCK_DGRAM, 0);
 	if (s < 0) {
